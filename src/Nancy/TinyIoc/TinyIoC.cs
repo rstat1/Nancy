@@ -3280,19 +3280,29 @@ namespace Nancy.TinyIoc
 
             var ctorParams = constructor.GetParameters();
             object[] args = new object[ctorParams.Count()];
+            object[] appAttribs;
 
             for (int parameterIndex = 0; parameterIndex < ctorParams.Count(); parameterIndex++)
             {
                 var currentParam = ctorParams[parameterIndex];
-
+                appAttribs = typeToConstruct.GetCustomAttributes(false);
                 try
                 {
-                    args[parameterIndex] = parameters.ContainsKey(currentParam.Name) ? 
-                                            parameters[currentParam.Name] : 
-                                            ResolveInternal(
-                                                new TypeRegistration(currentParam.ParameterType), 
-                                                NamedParameterOverloads.Default, 
-                                                options);
+                    if (appAttribs.Length > 0)
+                    {
+                        Veralev.Interfaces.IVeralevAppResolver appResolver = Resolve<Veralev.Interfaces.IVeralevAppResolver>();
+                        Veralev.Base.UsesNamedAppInstanceAttribute unaia = (Veralev.Base.UsesNamedAppInstanceAttribute)appAttribs[0];
+                        args[parameterIndex] = appResolver.GetNamedAppInstance(unaia.AppName);
+                    }
+                    else
+                    {
+                        args[parameterIndex] = parameters.ContainsKey(currentParam.Name) ?
+                                                parameters[currentParam.Name] :
+                                                ResolveInternal(
+                                                    new TypeRegistration(currentParam.ParameterType),
+                                                    NamedParameterOverloads.Default,
+                                                    options);
+                    }
                 }
                 catch (TinyIoCResolutionException ex)
                 {
